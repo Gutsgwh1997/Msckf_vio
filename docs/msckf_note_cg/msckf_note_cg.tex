@@ -17,7 +17,7 @@
 
 \subsection{MSCKF}
 
-MSCKF全称Multi-State Constraint Kalman Filter（多状态约束下的Kalman滤波器），是一种基于滤波的VIO算法，2007年由Mourikis在~\cite{mourikis2007multi}中首次提出。MSCKF在EKF框架下融合IMU和视觉信息，相较于单纯的VO算法，MSCKF能够适应更剧烈的运动、一定时间的纹理缺失等，具有更高的鲁棒性；相较于基于优化的VIO算法（VINS，OKVIS），MSCKF精度相当，速度更快，适合在计算资源有限的嵌入式平台运行。在机器人、无人机、AR/VR领域，MSCKF都有较为广泛的运用，如Google Project Tango就用了MSCKF进行位姿估计。
+MSCKF全称Multi-State Constraint Kalman Filter（多状态约束下的Kalman滤波器），是一种基于滤波的VIO算法，2007年由明尼苏达州大学Mourikis在~\cite{mourikis2007multi}中首次提出。MSCKF在EKF框架下融合IMU和视觉信息，相较于单纯的VO算法，MSCKF能够适应更剧烈的运动、一定时间的纹理缺失等，具有更高的鲁棒性；相较于基于优化的VIO算法（VINS，OKVIS），MSCKF精度相当，速度更快，适合在计算资源有限的嵌入式平台运行。在机器人、无人机、AR/VR领域，MSCKF都有较为广泛的运用，如Google Project Tango就用了MSCKF进行位姿估计。
 
 \subsection{MSCKF vs EKF-SLAM}
 
@@ -31,7 +31,7 @@ MSCKF全称Multi-State Constraint Kalman Filter（多状态约束下的Kalman滤
 
 \subsection{S-MSCKF}
 
-S-MSCKF~\cite{sun2018robust}是宾大Vijay Kumar实验室开源的双目版本MSCKF算法。
+S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源的双目版本MSCKF算法。
 
 % 代码（注释版）： \href{https://github.com/cggos/msckf_vio_cg}{cggos/msckf\_vio\_cg} 
 
@@ -195,7 +195,12 @@ IMU运动微分方程
 并且
 
 \begin{equation*}
-\Omega\left(\hat{\boldsymbol{\omega}}\right) = 
+\Omega\left(\hat{\boldsymbol{\omega}}\right) 
+\triangleq 
+{\begin{bmatrix}
+\hat{\boldsymbol{\omega}} \\ 0
+\end{bmatrix}}_R
+= 
 \begin{pmatrix}
 -[\hat{\boldsymbol{\omega}}_\times] & \boldsymbol{\omega} \\
 -\boldsymbol{\omega}^\top & 0
