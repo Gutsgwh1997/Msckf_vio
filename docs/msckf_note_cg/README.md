@@ -1,4 +1,4 @@
-# vinsmono_note_cg
+# msckf_note_cg
 
 -----
 
