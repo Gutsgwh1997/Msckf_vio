@@ -43,18 +43,20 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 \newpage
 \section{Image Processor}
 
-\subsection{Initialize}
+\subsection{代码流程}
+
+\subsubsection{Initialize}
 
 \begin{itemize}
 \item load parameters
 \item create \verb|FastFeatureDetector|
 \end{itemize}
 
-\subsection{ImuCallback}
+\subsubsection{ImuCallback}
 
 第一帧图像后，不断添加IMU message到 \verb|imu_msg_buffer|。
 
-\subsection{StereoCallback}
+\subsubsection{StereoCallback}
 
 \begin{figure}[!htbp]
 \centering
@@ -86,13 +88,19 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 
 \subsubsection{ImuCallback}
 
-主要内容为 \verb|initializeGravityAndBias|，要求前200帧IMU是静止不动
+\begin{itemize}
+
+\item 添加IMU message到 \verb|imu_msg_buffer|
+
+\item \verb|initializeGravityAndBias|，要求前200帧IMU静止不动
 
 \begin{itemize}
 \item 将前200帧加速度和角速度求平均
 \item 平均加速度的模值g作为重力加速度：\verb|IMUState::gravity|
 \item 平均角速度作为陀螺仪的bias： \verb|state_server.imu_state.gyro_bias|
 \item 计算重力向量(0,0,-g)和平均加速度之间的夹角(旋转四元数), 标定初始时刻IMU系与world系之间的夹角：\verb|state_server.imu_state.orientation|
+\end{itemize}
+
 \end{itemize}
 
 \subsubsection{FeatureCallback}
@@ -106,7 +114,7 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 \newpage
 \subsection{EKF状态向量}
 
-IMU状态向量
+IMU状态向量（true-state）
 
 \begin{equation*}
 \mathbf{x}_{I} = 
@@ -120,6 +128,7 @@ IMU状态向量
 {}^I_C \mathbf{q}^\top \quad
 {}^I\mathbf{p}^\top_C}
 \right)^\top
+\in \mathbb{R}^{22 \times 1}
 \end{equation*}
 
 IMU误差状态向量
@@ -137,6 +146,21 @@ IMU误差状态向量
 {}^I\tilde{\mathbf{p}}^\top_C}
 \right)^\top 
 \in \mathbb{R}^{21 \times 1}
+\end{equation*}
+
+IMU噪声向量
+
+\begin{equation*}
+\mathbf{n}_I^\top = 
+\left(\mathbf{n}_g^\top \; \mathbf{n}_{wg}^\top \; \mathbf{n}_a^\top \; \mathbf{n}_{wa}^\top\right)^\top
+\in \mathbb{R}^{12 \times 1}
+\end{equation*}
+
+其对应的噪声协方差矩阵
+
+\begin{equation*}
+\mathbf{Q}_I = \mathbb{E}\left[\mathbf{n}_I^{}\mathbf{n}_I^\top\right]
+\in \mathbb{R}^{12 \times 12}
 \end{equation*}
 
 Camera误差状态向量
@@ -168,10 +192,11 @@ Camera误差状态向量
 
 \subsubsection{IMU误差状态方程}
 
-IMU运动微分方程
+IMU运动微分方程（nominal-state状态方程）
 
 \begin{equation}
-\label{equ:imu_diff_func}
+\label{equ:imu_diff_func_nominal_state}
+\hat{\mathbf{x}} = 
 \begin{cases}
 \begin{aligned}
 {}^I_G\dot{\hat{\mathbf{q}}} &= \frac{1}{2}\Omega(\hat{\boldsymbol{\omega}}) {}^I_G\hat{\mathbf{q}} \\
@@ -188,8 +213,10 @@ IMU运动微分方程
 其中，
 
 \begin{equation*}
+\begin{aligned}
 \hat{\boldsymbol{\omega}} = \boldsymbol{\omega}_m - \hat{\mathbf{b}}_g, \quad
 \hat{\mathbf{a}} = \mathbf{a}_m - \hat{\mathbf{b}}_a
+\end{aligned}
 \end{equation*}
 
 并且
@@ -207,7 +234,23 @@ IMU运动微分方程
 \end{pmatrix}
 \end{equation*}
 
-根据式~\eqref{equ:imu_diff_func}，得到IMU误差状态方程
+根据 \cite{DBLP:journals/corr/abs-1711-02508} ESKF 中 \textit{\textbf{5.3.3 The error-state kinematics}} 小节公式，IMU error-state状态方程
+
+\begin{equation}
+\label{equ:imu_diff_func_error_state}
+\dot{\delta \mathbf{x}}_{I} = 
+\begin{cases}
+\begin{aligned}
+\dot{\delta \mathbf{p}} &= \delta \mathbf{v} \\
+\dot{\delta \mathbf{v}} &= -\mathbf{R}\left[\mathbf{a}_{m}-\mathbf{a}_{b}\right]_{ \times} \delta \boldsymbol{\theta}-\mathbf{R} \delta \mathbf{a}_{b}+\delta \mathbf{g}-\mathbf{R} \mathbf{a}_{n} \\
+\dot{\delta \boldsymbol{\theta}} &= -\left[\boldsymbol{\omega}_{m}-\boldsymbol{\omega}_{b}\right]_{ \times} \delta \boldsymbol{\theta}-\delta \boldsymbol{\omega}_{b}-\boldsymbol{\omega}_{n} \\
+\delta \dot{\mathbf{a}}_{b} &= \mathbf{a}_{w} \\ 
+\delta \dot{\boldsymbol{\omega}}_{b} &= \boldsymbol{\omega}_{w}
+\end{aligned}
+\end{cases}
+\end{equation}
+
+对式~\eqref{equ:imu_diff_func_error_state}线性化，得到\textbf{IMU连续形式误差状态方程}
 
 \begin{equation}
 \dot{\tilde{\mathbf{x}}}_I = 
@@ -215,7 +258,32 @@ IMU运动微分方程
 \mathbf{G} \mathbf{n}_I
 \end{equation}
 
-其中，$\mathbf{F}$和$\mathbf{G}$（代码在 \verb|MsckfVio::predictNewState|）
+其中，
+
+$\tilde{\mathbf{x}}_{I}$ 和 $\mathbf{n}_I$ 为
+
+$$
+\tilde{\mathbf{x}}_{I} = 
+\left(
+{}^I_G \tilde{\boldsymbol{\theta}}^\top \quad 
+\tilde{\mathbf{b}}_g^\top \quad 
+{}^G\tilde{\mathbf{v}}^\top_I \quad 
+\tilde{\mathbf{b}}_a^\top \quad
+{}^G\tilde{\mathbf{p}}^\top_I \quad
+{\color{blue}
+{}^I_C \tilde{\boldsymbol{\theta}}^\top \quad
+{}^I\tilde{\mathbf{p}}^\top_C}
+\right)^\top 
+\in \mathbb{R}^{21 \times 1}
+$$
+
+$$
+\mathbf{n}_I^\top = 
+\left(\mathbf{n}_g^\top \; \mathbf{n}_{wg}^\top \; \mathbf{n}_a^\top \; \mathbf{n}_{wa}^\top\right)^\top
+\in \mathbb{R}^{12 \times 1}
+$$
+
+$\mathbf{F}$和$\mathbf{G}$为（代码在 \verb|MsckfVio::processModel|，文献~\citep{sun2018robust}附录中$\mathbf{G}$计算有误，代码正确）
 
 \begin{equation*}
 \mathbf{F}_{21 \times 21} = 
@@ -241,37 +309,16 @@ IMU运动微分方程
 \begin{equation*}
 \mathbf{G}_{21 \times 12} = 
 \begin{pmatrix}
--\mathbf{I}_3 & \mathbf{0}_{3\times 3} & 
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
-\mathbf{0}_{3\times 3} & \mathbf{I}_3 & 
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & 
--C\left({}^I_G\hat{\mathbf{q}}\right)^\top & \mathbf{0}_{3\times 3} \\
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & 
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & 
-\mathbf{0}_{3\times 3} & \mathbf{I}_3 \\
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & 
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & 
-\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3}
+-\mathbf{I}_3 & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
+\mathbf{0}_{3\times 3} & \mathbf{I}_3 &  \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
+\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & -C\left({}^I_G\hat{\mathbf{q}}\right)^\top & \mathbf{0}_{3\times 3} \\
+\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{I}_3 \\
+\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
+\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} \\
+\mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3} & \mathbf{0}_{3\times 3}
 \end{pmatrix}
 \end{equation*}
 
-IMU噪声向量
-
-\begin{equation*}
-\mathbf{n}_I^\top = 
-\left(\mathbf{n}_g^\top \; \mathbf{n}_{wg}^\top \; \mathbf{n}_a^\top \; \mathbf{n}_{wa}^\top\right)^\top
-\in \mathbb{R}^{12 \times 1}
-\end{equation*}
-
-其对应的噪声协方差矩阵
-
-\begin{equation*}
-\mathbf{Q}_I = \mathbb{E}\left[\mathbf{n}_I^{}\mathbf{n}_I^\top\right]
-\in \mathbb{R}^{12 \times 12}
-\end{equation*}
 
 \subsubsection{IMU状态向量预测}
 
@@ -380,7 +427,7 @@ IMU状态传播协方差矩阵为
 
 \subsubsection{状态协方差扩增}
 
-增广的状态协方差矩阵为
+增广的状态协方差矩阵为（{\color{red}为什么}）
 
 \begin{equation}
 \begin{aligned}
@@ -401,17 +448,31 @@ IMU状态传播协方差矩阵为
 \end{aligned}
 \end{equation}
 
-其中，
+其中（下式参考\citep{sun2018robust}，而代码参考\cite{mourikis2007multi}，{\color{red}哪一个正确}），
 
 \begin{equation*}
 \mathbf{J} = 
+\frac{\partial{\tilde{\mathbf{x}}_{C_i}}}{\partial{\tilde{\mathbf{x}}}} = 
+\frac{
+\partial{\left(
+{}^{C_i}_G\tilde{\boldsymbol{\theta}}^\top \quad
+{}^G\tilde{\mathbf{p}}_{C_i}^\top
+\right)^\top}}
+{\partial{\left(
+\tilde{\mathbf{x}}_I^\top \quad
+\tilde{\mathbf{x}}_{C_1}^\top \quad
+\cdots \quad 
+\tilde{\mathbf{x}}_{C_N}^\top
+\right)^\top}} = 
 \begin{pmatrix}
 \mathbf{J}_I & \mathbf{0}_{6\times 6N}
 \end{pmatrix}
+\in \mathbb{R}^{6 \times (21+6N)}
 \end{equation*}
 
 \begin{equation*}
 \mathbf{J}_I = 
+\frac{\partial{\tilde{\mathbf{x}}_{C_i}}}{\partial{\tilde{\mathbf{x}}_I}} = 
 \begin{pmatrix}
 C\left({}^I_G\hat{\mathbf{q}}\right) & \mathbf{0}_{3\times 9} & 
 \mathbf{0}_{3\times 3} & \mathbf{I}_3 & \mathbf{0}_{3\times 3} \\
@@ -419,6 +480,7 @@ C\left({}^I_G\hat{\mathbf{q}}\right) & \mathbf{0}_{3\times 9} &
 \mathbf{0}_{3\times 9} & \mathbf{I}_3 & \mathbf{0}_{3\times 3} & 
 \mathbf{I}_{3}
 \end{pmatrix}
+\in \mathbb{R}^{6 \times 21}
 \end{equation*}
 
 为表示方便，拆解 $\mathbf{P}_{k|k}$为
@@ -447,7 +509,7 @@ C\left({}^I_G\hat{\mathbf{q}}\right) & \mathbf{0}_{3\times 9} &
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[scale=0.8]{images/visual_conv_augmentation.png}
+\includegraphics[scale=0.6]{images/visual_conv_augmentation.png}
 \end{figure}
 
 \subsection{Measurement Update}
@@ -495,6 +557,7 @@ C\left({}^{C_{i, 2}}_G\mathbf{q}\right)
 \mathbf{H}_{C_i}^j\tilde{\mathbf{x}}_{C_i} + 
 \mathbf{H}_{f_i}^j{}^G\tilde{\mathbf{p}}_{j} + 
 \mathbf{n}_i^j
+\in \mathbb{R}^{4 \times 1}
 \end{equation}
 
 其中，测量雅克比矩阵（代码在 \verb|MsckfVio::measurementJacobian|）
@@ -505,12 +568,14 @@ C\left({}^{C_{i, 2}}_G\mathbf{q}\right)
 \frac{\partial \mathbf{z}_i^j}{\partial {}^{C_{i,1}}\mathbf{p}_j} \cdot 
 \frac{\partial {}^{C_{i,1}}\mathbf{p}_j}{\partial \mathbf{x}_{C_{i,1}}} + 
 \frac{\partial \mathbf{z}_i^j}{\partial {}^{C_{i,2}}\mathbf{p}_j} \cdot 
-\frac{\partial {}^{C_{i,2}}\mathbf{p}_j}{\partial \mathbf{x}_{C_{i,1}}} \\
+\frac{\partial {}^{C_{i,2}}\mathbf{p}_j}{\partial \mathbf{x}_{C_{i,1}}}
+\in \mathbb{R}^{4 \times 6} \\
 \mathbf{H}_{f_i}^j = 
 \frac{\partial \mathbf{z}_i^j}{\partial {}^{C_{i,1}}\mathbf{p}_j} \cdot 
 \frac{\partial {}^{C_{i,1}}\mathbf{p}_j}{\partial {}^G\mathbf{p}_j} +
 \frac{\partial \mathbf{z}_i^j}{\partial {}^{C_{i,2}}\mathbf{p}_j} \cdot 
 \frac{\partial {}^{C_{i,2}}\mathbf{p}_j}{\partial {}^G\mathbf{p}_j} 
+\in \mathbb{R}^{4 \times 3}
 \end{gathered}
 \end{equation}
 
@@ -520,9 +585,12 @@ C\left({}^{C_{i, 2}}_G\mathbf{q}\right)
 
 \begin{equation*}
 \mathbf{r}^j = 
-\mathbf{H}_{\mathbf{x}}^j\tilde{\mathbf{x}} + 
+\mathbf{H}_{\mathbf{x}}^j \tilde{\mathbf{x}} + 
 \mathbf{H}_f^j {}^G\tilde{\mathbf{p}}_j + 
 \mathbf{n}^j
+\quad \text{with} \quad
+\mathbf{H}_{\mathbf{x}}^j \in \mathbb{R}^{4M \times 6}, 
+\mathbf{H}_f^j \in \mathbb{R}^{4M \times 3}
 \end{equation*}
 
 
