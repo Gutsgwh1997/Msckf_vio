@@ -21,9 +21,9 @@ MSCKF全称Multi-State Constraint Kalman Filter（多状态约束下的Kalman滤
 
 \subsection{MSCKF vs EKF-SLAM}
 
-在传统的EKF-SLAM框架中，特征点的信息会加入到特征向量和协方差矩阵里,这种方法的缺点是特征点的信息会给一个初始深度和初始协方差，如果不正确的话，极容易导致后面不收敛，出现inconsistent的情况。MSCKF维护一个pose的FIFO，按照时间顺序排列，可以称为滑动窗口，一个特征点在滑动窗口的几个位姿都被观察到的话，就会在这几个位姿间建立约束，从而进行KF的更新。~\cite{xinliang-zhong-msckf_notes}
+在传统的EKF-SLAM框架中，特征点的信息会加入到特征向量和协方差矩阵里,这种方法的缺点是特征点的信息会给一个初始深度和初始协方差，如果不正确的话，极容易导致后面不收敛，出现inconsistent的情况。MSCKF维护一个pose的FIFO，按照时间顺序排列，可以称为滑动窗口，一个特征点在滑动窗口的几个位姿都被观察到的话，就会在这几个位姿间建立约束，从而进行KF的更新。~\cite{shelley2014monocular}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.25]{images/ekf-slam-vs-msckf.png}
 \caption{EKF-SLAM, keyframe-based SLAM, MSCKF}
@@ -35,7 +35,7 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 
 % 代码（注释版）： \href{https://github.com/cggos/msckf_vio_cg}{cggos/msckf\_vio\_cg} 
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.5]{images/msckf_vio_io.png}
 \end{figure}
@@ -43,46 +43,89 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 \newpage
 \section{Image Processor}
 
-\subsection{代码流程}
-
-\subsubsection{Initialize}
+\subsection{Initialize}
 
 \begin{itemize}
 \item load parameters
 \item create \verb|FastFeatureDetector|
 \end{itemize}
 
-\subsubsection{ImuCallback}
+\subsection{ImuCallback}
 
 第一帧图像后，不断添加IMU message到 \verb|imu_msg_buffer|。
 
-\subsubsection{StereoCallback}
+\subsection{StereoCallback}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.6]{images/stereo_cb.png}
 \caption{StereoCallback流程图}
 \end{figure}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{images/smsckf_circlematch.png}
+	\caption{StereoCallback Circle Match}
+\end{figure}
 
-\newpage
+\subsubsection{Feature Tracking (时间)}
+
+\begin{enumerate}
+	\item Integrate IMU(Gyroscope) Data
+		\begin{enumerate}
+			\item 利用IMU陀螺仪的数据，计算两帧图像之间的平均角速度 $\bar{\boldsymbol{\omega}}_m^I$
+			\item 将其转换到相机坐标系下 $\bar{\boldsymbol{\omega}}_m^C = \mathbf{R}_{CI} \bar{\boldsymbol{\omega}}_m^I$
+			\item 积分得到旋转向量 $\Delta \boldsymbol{\phi} = \bar{\boldsymbol{\omega}}_m^C \cdot \Delta t$
+			\item 利用罗德里格斯公式，得到旋转矩阵 $\Delta \mathbf{R} = \operatorname{Rodrigues}(\Delta \boldsymbol{\phi})$
+		\end{enumerate}
+	
+	\item Predict via IMU
+		$$
+		\mathbf{p}^\prime = 
+		\mathbf{K} \cdot \Delta {\mathbf{R}} \cdot \mathbf{K}^{-1} \cdot \mathbf{p}
+		$$
+	
+	\item Feature Tracking by LK Optical Flow
+\end{enumerate}
+
+
+\subsubsection{Stereo Match (空间)}
+
+\begin{itemize}
+	\item curr cam0 points $\longleftrightarrow$ curr cam1 points
+\end{itemize}
+
+\subsubsection{2-Point RANSAC}
+
+\begin{itemize}
+	\item prev cam0 points $\longleftrightarrow$ curr cam0 points
+	\item prev cam1 points $\longleftrightarrow$ curr cam1 points
+\end{itemize}
+
+
 \section{MsckfVio Estimator/Filter}
 
 \subsection{Overview}
 
 \subsubsection{Kalman Filter}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[scale=0.7]{images/kf_flow.jpg}
+\includegraphics[scale=0.6]{images/kf_flow.jpg}
 \caption{Kalman Filter流程图}
 \end{figure}
 
+
+\begin{itemize}
+	\item 高频预测，低频修正
+\end{itemize}
+
+
 \subsubsection{Multi-State Constraint Filter}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[scale=0.6]{images/msckf_algr.png}
+\includegraphics[scale=0.4]{images/msckf_algr.png}
 \caption{Multi-State Constraint Filter 流程图}
 \end{figure}
 
@@ -91,20 +134,24 @@ S-MSCKF~\cite{sun2018robust}是宾夕法尼亚大学Vijay Kumar实验室开源�
 \subsubsection{Initialize}
 
 \begin{itemize}
+	
 \item Load Parameters
 \item Initialize state server: \verb|state_server.continuous_noise_cov|
 \item Initialize the \textbf{chi squared test table} with confidence level \textbf{P=0.95} for \verb|MsckfVio::gatingTest()|
+
 \begin{lstlisting}
 for (int i = 1; i < 100; ++i) {
     boost::math::chi_squared chi_squared_dist(i);
     chi_squared_test_table[i] = boost::math::quantile(chi_squared_dist, 0.05);
 }
 \end{lstlisting}
-\begin{figure}[!htbp]
+
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.6]{images/chi_square_table.png}
 \caption{chi-square table}
 \end{figure}
+
 \end{itemize}
 
 \subsubsection{ImuCallback}
@@ -120,21 +167,23 @@ for (int i = 1; i < 100; ++i) {
 \item 平均角速度作为陀螺仪的bias： \verb|state_server.imu_state.gyro_bias|
 \item 平均加速度作为IMU系下的重力加速度：\verb|gravity_imu|
 \item 平均加速度的模值作为重力加速度模长g：\verb|IMUState::gravity|
-\item 计算初始时刻World系（水平天向）重力向量(0,0,-g)和IMU系重力向量\verb|gravity_imu|之间的姿态(旋转四元数)：\verb|state_server.imu_state.orientation|
+\item ENU坐标系下，
+      $\mathbf{g} = \begin{bmatrix} 0 & 0 & -g \end{bmatrix}^T = \begin{bmatrix} 0 & 0 & -9.81007 \end{bmatrix}^T$
+\item 计算初始时刻World系（水平天向）重力向量 $\mathbf{g}$ 和IMU系重力向量\verb|gravity_imu|之间的姿态(旋转四元数)：\verb|state_server.imu_state.orientation|
 \end{itemize}
 
 \end{itemize}
 
 \subsubsection{FeatureCallback}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.7]{images/feature_cb.png}
 \caption{FeatureCallback流程图}
 \end{figure}
 
 \newpage
-\subsection{EKF状态向量}
+\subsection{状态表示}
 
 IMU状态向量（true-state）
 
@@ -178,7 +227,7 @@ IMU噪声向量
 \in \mathbb{R}^{12 \times 1}
 \end{equation*}
 
-其对应的噪声协方差矩阵
+其对应的(连续时间)噪声协方差矩阵
 
 \begin{equation*}
 \mathbf{Q}_I 
@@ -219,9 +268,24 @@ Camera误差状态向量
 
 \subsection{Propagation/Prediction}
 
-\subsubsection{IMU误差状态方程}
+\subsubsection{IMU true-state kinematics}
 
-IMU运动微分方程（nominal-state状态方程）
+$$
+\begin{array}{l}
+\mathbf{a}_{m}=\mathbf{R}_{t}^{\top}\left(\mathbf{a}_{t}-\mathbf{g}_{t}\right)+\mathbf{a}_{b t}+\mathbf{a}_{n} \\
+\boldsymbol{\omega}_{m}=\boldsymbol{\omega}_{t}+\boldsymbol{\omega}_{b t}+\boldsymbol{\omega}_{n}
+\end{array}
+$$
+
+where in ENU
+
+$$
+\mathbf{g}_t = \begin{bmatrix} 0 & 0 & -9.81007 \end{bmatrix}^T
+$$
+
+\subsubsection{IMU nominal-state kinematics}
+
+IMU运动微分方程(nominal-state状态方程)~\cite{sun2018robust}
 
 \begin{equation}
 \label{equ:imu_diff_func_nominal_state}
@@ -254,8 +318,8 @@ IMU运动微分方程（nominal-state状态方程）
 \Omega\left(\hat{\boldsymbol{\omega}}\right) 
 \triangleq 
 {\begin{bmatrix}
-\hat{\boldsymbol{\omega}} \\ 0
-\end{bmatrix}}_R
+	\hat{\boldsymbol{\omega}} \\ 0
+	\end{bmatrix}}_R
 = 
 \begin{pmatrix}
 -[\hat{\boldsymbol{\omega}}_\times] & \boldsymbol{\omega} \\
@@ -263,23 +327,32 @@ IMU运动微分方程（nominal-state状态方程）
 \end{pmatrix}
 \end{equation*}
 
+\subsubsection{IMU error-state kinematics}
+
 根据 \cite{DBLP:journals/corr/abs-1711-02508} ESKF 中 \textit{\textbf{5.3.3 The error-state kinematics}} 小节公式，IMU error-state状态方程
 
 \begin{equation}
 \label{equ:imu_diff_func_error_state}
-\dot{\delta \mathbf{x}}_{I} = 
+\dot{\tilde{\mathbf{x}}}_I = 
 \begin{cases}
 \begin{aligned}
-\dot{\delta \mathbf{p}} &= \delta \mathbf{v} \\
-\dot{\delta \mathbf{v}} &= -\mathbf{R}\left[\mathbf{a}_{m}-\mathbf{a}_{b}\right]_{ \times} \delta \boldsymbol{\theta}-\mathbf{R} \delta \mathbf{a}_{b}+\delta \mathbf{g}-\mathbf{R} \mathbf{a}_{n} \\
 \dot{\delta \boldsymbol{\theta}} &= -\left[\boldsymbol{\omega}_{m}-\boldsymbol{\omega}_{b}\right]_{ \times} \delta \boldsymbol{\theta}-\delta \boldsymbol{\omega}_{b}-\boldsymbol{\omega}_{n} \\
+
+\delta \dot{\boldsymbol{\omega}}_{b} &= \boldsymbol{\omega}_{w} \\
+
+\dot{\delta \mathbf{v}} &= -\mathbf{R}\left[\mathbf{a}_{m}-\mathbf{a}_{b}\right]_{ \times} \delta \boldsymbol{\theta}-\mathbf{R} \delta \mathbf{a}_{b}+\delta \mathbf{g}-\mathbf{R} \mathbf{a}_{n} \\
+
 \delta \dot{\mathbf{a}}_{b} &= \mathbf{a}_{w} \\ 
-\delta \dot{\boldsymbol{\omega}}_{b} &= \boldsymbol{\omega}_{w}
+
+\dot{\delta \mathbf{p}} &= \delta \mathbf{v} \\
+
+{}^I_C\dot{\delta \boldsymbol{\theta}} &= \mathbf{0}_{3\times 1} \\
+{}^I\dot{\delta \mathbf{p}}_C &= \mathbf{0}_{3\times 1}
 \end{aligned}
 \end{cases}
 \end{equation}
 
-对式~\eqref{equ:imu_diff_func_error_state}线性化，得到\textbf{IMU连续形式误差状态方程}
+对式~\eqref{equ:imu_diff_func_error_state}线性化，得到\textbf{IMU(连续时间)误差状态方程}
 
 \begin{equation}
 \dot{\tilde{\mathbf{x}}}_I = 
@@ -380,7 +453,7 @@ y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 
 代码在 \verb|MsckfVio::processModel|，处理两帧图像间的每一帧IMU数据。
 
-离散时间状态转移矩阵
+(离散时间)状态转移矩阵
 
 \begin{equation}
 \begin{aligned}
@@ -397,7 +470,7 @@ y_{n+1} = y_n + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4)
 
 {\color{red}why: Modify the transition matrix to make the observability matrix have proper null space}
 
-离散时间噪声协方差矩阵
+(离散时间)噪声协方差矩阵
 
 \begin{equation}
 \begin{aligned}
@@ -414,6 +487,7 @@ IMU状态传播协方差矩阵为
 \begin{equation}
 \mathbf{P}_{II_{k+1|k}} = 
 \boldsymbol{\Phi}_k\mathbf{P}_{II_{k|k}}\boldsymbol{\Phi}_k^\top + \mathbf{Q}_k
+\in \mathbb{R}^{21 \times 21}
 \end{equation}
 
 系统状态传播协方差矩阵拆解表示为
@@ -439,7 +513,7 @@ IMU状态传播协方差矩阵为
 }
 \end{equation}
 
-{\color{red}why: Fix the covariance to be symmetric}
+Fix the covariance to be symmetric
 
 \begin{equation}
 \mathbf{P}_{k+1|k} = \frac{\mathbf{P}_{k+1|k} + \mathbf{P}_{k+1|k}^{\top}}{2}
@@ -449,7 +523,7 @@ IMU状态传播协方差矩阵为
 
 整个状态(IMU+Camera)的covariance传播过程如图所示~\cite{xinliang-zhong-msckf_notes}：
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.4]{images/imu_propagate.png}
 \end{figure}
@@ -458,9 +532,9 @@ IMU状态传播协方差矩阵为
 
 代码在 \verb|MsckfVio::stateAugmentation|。
 
-\subsubsection{相机状态向量扩增}
+\subsubsection{相机状态向量扩增(随机克隆)}
 
-根据IMU位姿求取Camera位姿
+根据IMU预测位姿求取Camera位姿
 
 \begin{equation}
 \begin{aligned}
@@ -471,7 +545,13 @@ IMU状态传播协方差矩阵为
 
 \subsubsection{状态协方差扩增}
 
-增广的状态协方差矩阵为（{\color{red}why}）
+根据
+
+$$
+y = Ax, \quad {\Sigma}_y = E(yy^T) = E(Ax x^T A^T) = A E(xx^T) A^T = A {\Sigma}_x A^T
+$$
+
+增广的状态协方差矩阵
 
 \begin{equation}
 \begin{aligned}
@@ -552,12 +632,12 @@ C\left({}^I_G\hat{\mathbf{q}}\right) & \mathbf{0}_{3\times 9} &
 }
 \end{equation}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.45]{images/visual_conv_augmentation.png}
 \end{figure}
 
-{\color{red}why: Fix the covariance to be symmetric}
+Fix the covariance to be symmetric
 
 \begin{equation}
 \mathbf{P}_{k|k}^{\prime} = 
@@ -640,7 +720,7 @@ C\left({}^{C_{i, 2}}_G\mathbf{q}\right)
 \mathbf{r}^j = 
 \mathbf{H}_{\mathbf{x}}^j \tilde{\mathbf{x}} + 
 \mathbf{H}_f^j {}^G\tilde{\mathbf{p}}_j + 
-\mathbf{n}^j
+\mathbf{n}^j \in \mathbb{R}^{4M}
 \quad \text{with} \quad
 \mathbf{H}_{\mathbf{x}}^j \in \mathbb{R}^{4M \times 6}, 
 \mathbf{H}_f^j \in \mathbb{R}^{4M \times 3}
@@ -656,9 +736,16 @@ C\left({}^{C_{i, 2}}_G\mathbf{q}\right)
 = \mathbf{H}_{\mathbf{x}, o}^j\tilde{\mathbf{x}} + 
 \mathbf{n}^j_o 
 \in \mathbb{R}^{(4M-3) \times 1}
+\quad \text{with} \quad
+\mathbf{H}_{\mathbf{x}, o}^j \in \mathbb{R}^{(4M-3) \times (21+6n)}
 \end{equation}
 
-零空间$\mathbf{V}$通过SVD分解得到（代码在 \verb|MsckfVio::featureJacobian|）
+零空间$\mathbf{V}$通过SVD分解(或QR分解)得到（代码在 \verb|MsckfVio::featureJacobian|）
+
+$$
+\mathbf{H}_f^j = UDV^T
+$$
+
 \begin{lstlisting}
 // Project the residual and Jacobians onto the nullspace of H_fj.
 JacobiSVD<MatrixXd> svd_helper(H_fj, ComputeFullU | ComputeThinV);
@@ -667,21 +754,34 @@ H_x = A.transpose() * H_xj;
 r   = A.transpose() * r_j;
 \end{lstlisting}
 
+\item Mahalanobis gating test (Probability = 0.95)
+
+$$
+{\gamma}_j = 
+{\mathbf{r}^j_o }^T 
+(\mathbf{H}_{\mathbf{x}, o}^j \mathbf{P} {\mathbf{H}_{\mathbf{x}, o}^j}^T + 
+{\sigma}^2 \mathbf{I})^{-1} 
+\mathbf{r}^j_o 
+$$
+
+\begin{lstlisting}
+if (gatingTest(H_xj, r_j, cam_state_ids.size()-1)) {
+	H_x.block(stack_cntr, 0, H_xj.rows(), H_xj.cols()) = H_xj;
+	r.segment(stack_cntr, r_j.rows()) = r_j;
+	stack_cntr += H_xj.rows();
+}
+\end{lstlisting}
+
 \item 叠加所有特征点的多个观测，得到
 
 \begin{equation}
 \label{equ:visual_residual_final}
 \mathbf{r}_{o}=\mathbf{H}_{\mathbf{X}} \widetilde{\mathbf{X}}+\mathbf{n}_{o}
 \in \mathbb{R}^{N(4M-3) \times 1}
+\quad \text{with} \quad
+\mathbf{H}_{\mathbf{X}} \in \mathbb{R}^{N(4M-3) \times (21+6n)}
 \end{equation}
 
-\begin{lstlisting}
-if (gatingTest(H_xj, r_j, cam_state_ids.size()-1)) {
-  H_x.block(stack_cntr, 0, H_xj.rows(), H_xj.cols()) = H_xj;
-  r.segment(stack_cntr, r_j.rows()) = r_j;
-  stack_cntr += H_xj.rows();
-}
-\end{lstlisting}
 
 \end{enumerate}
 
@@ -691,7 +791,7 @@ if (gatingTest(H_xj, r_j, cam_state_ids.size()-1)) {
 OC-EKF
 
 
-\subsubsection{EKF Update}
+\subsubsection{ESKF Update}
 
 代码在 \verb|MsckfVio::measurementUpdate|。
 
@@ -716,19 +816,35 @@ OC-EKF
 
 \begin{equation}
 \mathbf{r}_{n}=\mathbf{Q}_{1}^{T} \mathbf{r}_{o}=\mathbf{T}_{H} \widetilde{\mathbf{X}}+\mathbf{n}_{n}
+\in \mathbb{R}^{(21+6n) \times 1}
+, \quad
+\mathbf{n}_{n} \sim \mathcal{N}(0, \mathbf{R}_{n})
 \end{equation}
 
-噪声向量$\mathbf{n}_{n}$的协方差矩阵为
+with
+
+\begin{equation}
+\mathbf{T}_{H} = \mathbf{Q}_{1}^{T} \cdot \mathbf{H}_{\mathbf{X}} 
+\in \mathbb{R}^{(21+6n) \times (21+6n)}
+\end{equation}
 
 \begin{equation}
 \mathbf{R}_{n}=
 \mathbf{Q}_{1}^{T} \mathbf{R}_{o} \mathbf{Q}_{1}=\sigma_{\mathrm{im}}^{2} \mathbf{I}_{r}
+\quad \text{with} \quad
+\sigma_{\mathrm{im}} = 0.01
 \end{equation}
 
-计算Kalman增益
+测量协方差矩阵
 
 \begin{equation}
-\mathbf{K}=\mathbf{P} \mathbf{T}_{H}^{T}\left(\mathbf{T}_{H} \mathbf{P} \mathbf{T}_{H}^{T}+\mathbf{R}_{n}\right)^{-1}
+\mathbf{S} = \mathbf{T}_{H} \mathbf{P} \mathbf{T}_{H}^{T}+\mathbf{R}_{n}
+\end{equation}
+
+Kalman增益
+
+\begin{equation}
+\mathbf{K}=\mathbf{P} \mathbf{T}_{H}^{T} \cdot \mathbf{S}^{-1}
 \end{equation}
 
 更新系统误差状态
@@ -743,14 +859,45 @@ OC-EKF
 \mathbf{X}_{k+1} = \mathbf{X}_k \oplus \Delta \mathbf{X}
 \end{equation}
 
-更新系统状态协方差矩阵
+更新系统状态协方差矩阵(参见附录\ref{appendix:covP})
 
 \begin{equation}
-\mathbf{P}_{k+1 | k+1}=\left(\mathbf{I}_{\xi}-\mathbf{K} \mathbf{T}_{H}\right) \mathbf{P}_{k+1 | k}\left(\mathbf{I}_{\xi}-\mathbf{K} \mathbf{T}_{H}\right)^{T}+\mathbf{K} \mathbf{R}_{n} \mathbf{K}^{T}
+\mathbf{P}_{k+1 | k+1}=
+\left(\mathbf{I}-\mathbf{K} \mathbf{T}_{H}\right) \mathbf{P}_{k+1 | k}
 \end{equation}
 
-\newpage
+\subsubsection{Post EKF Update}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.45]{images/post_ekf_update.png}
+	\caption{Post EKF Update}
+\end{figure}
+
+
+\subsection{Result Analysis}
+
+
+\section{Stereo-MSCKF to Mono-MSCKF}
+
+\section{Mono-MSCKF + Depth}
+
+
+\appendix
+
+\section{Three forms of P ~\cite{DBLP:journals/corr/abs-1711-02508}}
+\label{appendix:covP}
+
+\begin{itemize}
+	\item the simplest form which is known to have poor	numerical stability, as its outcome is not guaranteed to be symmetric nor positive definite
+			$$\mathbf{P} \leftarrow(\mathbf{I}-\mathbf{K} \mathbf{H}) \mathbf{P}$$
+	\item the symmetric form
+			$$\mathbf{P} \leftarrow \mathbf{P}-\mathbf{K}\left(\mathbf{H} \mathbf{P} \mathbf{H}^{\top}+\mathbf{V}\right) \mathbf{K}^{\top}$$
+	\item the symmetric and positive Joseph form
+			$$\mathbf{P} \leftarrow(\mathbf{I}-\mathbf{K H}) \mathbf{P}(\mathbf{I}-\mathbf{K H})^{\top}+\mathbf{K V K}^{\top}$$
+\end{itemize}
+
+\newpage
 \bibliography{bibfile}
 
 \end{document}
