@@ -545,7 +545,7 @@ Fix the covariance to be symmetric
 
 \subsubsection{状态协方差扩增}
 
-根据
+根据 ~\ref{Appendix:gauss_intersection}
 
 $$
 y = Ax, \quad {\Sigma}_y = E(yy^T) = E(Ax x^T A^T) = A E(xx^T) A^T = A {\Sigma}_x A^T
@@ -786,7 +786,7 @@ if (gatingTest(H_xj, r_j, cam_state_ids.size()-1)) {
 \end{enumerate}
 
 
-\subsubsection{能观性约束}
+\subsubsection{能观性约束 (OC)}
 
 OC-EKF
 
@@ -875,12 +875,14 @@ Kalman增益
 \end{figure}
 
 
-\subsection{Result Analysis}
+\section{Result Analysis}
 
 
 \section{Stereo-MSCKF to Mono-MSCKF}
 
 \section{Mono-MSCKF + Depth}
+
+\section{Hybrid MSCKF (MSCKF + EKF) ~\cite{Li2012c}}
 
 
 \appendix
@@ -896,6 +898,99 @@ Kalman增益
 	\item the symmetric and positive Joseph form
 			$$\mathbf{P} \leftarrow(\mathbf{I}-\mathbf{K H}) \mathbf{P}(\mathbf{I}-\mathbf{K H})^{\top}+\mathbf{K V K}^{\top}$$
 \end{itemize}
+
+
+\section{Multidimensional Normal Distribution ~\cite{shelley2014monocular}}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.45]{images/2D_normal_distribution.png}
+	\caption{A two-dimensional normal distribution}
+\end{figure}
+
+$$
+\left[\begin{array}{l}
+x \\
+y
+\end{array}\right] \sim \mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\Sigma})=\mathcal{N}\left(\left[\begin{array}{l}
+\mu_{x} \\
+\mu_{y}
+\end{array}\right],\left[\begin{array}{l}
+\Sigma_{x x} \Sigma_{x y} \\
+\Sigma_{y x} \Sigma_{y y}
+\end{array}\right]\right)
+$$
+
+$$
+\begin{aligned}
+p\left(\left[\begin{array}{c}
+x \\
+y
+\end{array}\right] ; \boldsymbol{\mu}, \boldsymbol{\Sigma}\right)=\eta \exp \left(-\frac{1}{2}\left(\left[\begin{array}{c}
+x \\
+y
+\end{array}\right]-\left[\begin{array}{c}
+\mu_{x} \\
+\mu_{y}
+\end{array}\right]\right)^{T}\left[\begin{array}{cc}
+\Sigma_{x x} & \Sigma_{x y} \\
+\Sigma_{y x} & \Sigma_{y y}
+\end{array}\right]^{-1}\left(\left[\begin{array}{c}
+x \\
+y
+\end{array}\right]-\left[\begin{array}{c}
+\mu_{x} \\
+\mu_{y}
+\end{array}\right]\right)\right) \\
+\text { with } \eta=\frac{1}{2 \pi|\boldsymbol{\Sigma}|^{1 / 2}} \text { and } \Sigma_{x y}=\Sigma_{y x}^{T}
+\end{aligned}
+$$
+
+\subsection{Marginalization}
+
+If we wish to find the pdf of $x$ alone, we must marginalize out $y$.
+
+$$
+\begin{aligned}
+p(x) &=\int p(x, y) d y \\
+&=\int p(x \mid y) p(y) d y \\
+&=\mathcal{N}\left(\mu_{x}, \Sigma_{x x}\right)
+\end{aligned}
+$$
+
+\subsection{Conditioning}
+
+$$
+\left.x\right|_{y=y_{0}} \sim \mathcal{N}(\mu_{x}+\underbrace{\sum_{x y} \Sigma_{y y}^{-1}\left(y_{0}-\mu_{y}\right)}_{\text {mean offset }}, \Sigma_{x x}-\underbrace{\sum_{x y} \Sigma_{y y}^{-1} \Sigma_{y x}}_{\text {covariance offset }})
+$$
+
+\subsection{Intersection}
+\label{Appendix:gauss_intersection}
+
+we find the joint probability $p(x, y)$, also called the intersection. Let $y = Ax + b$ where $A$ is a constant and $b \sim \mathcal{N}(0, Q)$.
+
+$$
+\begin{aligned}
+p\left(\left[\begin{array}{l}
+x \\
+y
+\end{array}\right]\right) &=\mathcal{N}\left(\left[\begin{array}{l}
+\mu_{x} \\
+\mu_{y}
+\end{array}\right],\left[\begin{array}{cc}
+\Sigma_{x x} & \Sigma_{x y} \\
+\Sigma_{y x} & \Sigma_{y y}
+\end{array}\right]\right) \\
+&=\mathcal{N}\left(\left[\begin{array}{c}
+\mu_{x} \\
+A \mu_{x}+b
+\end{array}\right],\left[\begin{array}{cc}
+\Sigma_{x x} & \Sigma_{x x} A^{T} \\
+A \Sigma_{x x} & A \Sigma_{x x} A^{T}+Q
+\end{array}\right]\right)
+\end{aligned}
+$$
+
 
 \newpage
 \bibliography{bibfile}
