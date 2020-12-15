@@ -2,6 +2,7 @@
 # 1. For each matrix (e.g. cam0/T_cam_imu), remove the brackets and minus sign for each line. Use one pair of brackets for each matrix.
 # 2. Add the T_imu_body at the end of the calibration file (usually set to identity).
 cam0:
+  # 表示cam到imu的姿态变换
   T_cam_imu:
     [0.014865542981794,   0.999557249008346,  -0.025774436697440,   0.065222909535531,
     -0.999880929698575,   0.014967213324719,   0.003756188357967,  -0.020706385492719,

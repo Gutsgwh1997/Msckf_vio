@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(msckf_vio)
 
 set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_compile_options(-std=c++11)
 add_definitions(-w -DWITH_LC=1) # close warning
@@ -136,21 +137,21 @@ target_link_libraries(image_processor_nodelet
 ## Install ##
 #############
 
-install(TARGETS
-  msckf_vio msckf_vio_nodelet image_processor image_processor_nodelet
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# install(TARGETS
+#   msckf_vio msckf_vio_nodelet image_processor image_processor_nodelet
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN "*_nodelet.h" EXCLUDE
-)
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#   PATTERN "*_nodelet.h" EXCLUDE
+# )
 
-install(FILES nodelets.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+# install(FILES nodelets.xml
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )
 
 #############
 ## Testing ##

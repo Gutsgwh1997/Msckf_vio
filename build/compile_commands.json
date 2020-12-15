@@ -1,0 +1,77 @@
+[
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -I/opt/ros/kinetic/include/opencv-3.3.1-dev -I/opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG   -w -std=c++11 -o CMakeFiles/test_math_utils.dir/test/math_utils_test.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/test/math_utils_test.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/test/math_utils_test.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -I/opt/ros/kinetic/include/opencv-3.3.1-dev -I/opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG   -w -std=c++11 -o CMakeFiles/test_feature_init.dir/test/feature_initialization_test.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/test/feature_initialization_test.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/test/feature_initialization_test.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dimage_processor_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/image_processor.dir/src/image_processor.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/image_processor.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/image_processor.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dimage_processor_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/image_processor.dir/src/utils.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/utils.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/utils.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dmsckf_vio_nodelet_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/msckf_vio_nodelet.dir/src/msckf_vio_nodelet.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/msckf_vio_nodelet.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/msckf_vio_nodelet.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dimage_processor_nodelet_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/image_processor_nodelet.dir/src/image_processor_nodelet.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/image_processor_nodelet.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/image_processor_nodelet.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dmsckf_vio_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/msckf_vio.dir/src/msckf_vio.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/msckf_vio.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/msckf_vio.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio",
+  "command": "/usr/bin/c++   -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"msckf_vio\\\" -DWITH_LC=1 -Dmsckf_vio_EXPORTS -I/home/gwh/catkin_ws/devel/.private/msckf_vio/include -I/home/gwh/catkin_ws/src/msckf_vio/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/opt/ros/kinetic/share/orocos_kdl/../../include -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv -I/usr/include/eigen3 -I/usr/include/pcl-1.7 -I/usr/include/ni -I/usr/include/vtk-6.2 -I/usr/include/jsoncpp -I/usr/include/x86_64-linux-gnu -I/usr/include/freetype2 -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/include/libxml2 -I/usr/include/hdf5/serial -I/usr/include/python2.7 -I/usr/include/tcl -I/usr/local/include/eigen3 -I/usr/include/suitesparse  -O3 -DNDEBUG -fPIC   -w -std=c++11 -o CMakeFiles/msckf_vio.dir/src/utils.cpp.o -c /home/gwh/catkin_ws/src/msckf_vio/src/utils.cpp",
+  "file": "/home/gwh/catkin_ws/src/msckf_vio/src/utils.cpp"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgmock_EXPORTS -I/usr/src/gmock/include -I/usr/src/gmock -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gmock.dir/usr/src/gtest/src/gtest-all.cc.o -c /usr/src/gtest/src/gtest-all.cc",
+  "file": "/usr/src/gtest/src/gtest-all.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgmock_EXPORTS -I/usr/src/gmock/include -I/usr/src/gmock -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /usr/src/gmock/src/gmock-all.cc",
+  "file": "/usr/src/gmock/src/gmock-all.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgmock_main_EXPORTS -I/usr/src/gmock/include -I/usr/src/gmock -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gmock_main.dir/usr/src/gtest/src/gtest-all.cc.o -c /usr/src/gtest/src/gtest-all.cc",
+  "file": "/usr/src/gtest/src/gtest-all.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgmock_main_EXPORTS -I/usr/src/gmock/include -I/usr/src/gmock -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gmock_main.dir/src/gmock-all.cc.o -c /usr/src/gmock/src/gmock-all.cc",
+  "file": "/usr/src/gmock/src/gmock-all.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgmock_main_EXPORTS -I/usr/src/gmock/include -I/usr/src/gmock -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /usr/src/gmock/src/gmock_main.cc",
+  "file": "/usr/src/gmock/src/gmock_main.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgtest_EXPORTS -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /usr/src/gtest/src/gtest-all.cc",
+  "file": "/usr/src/gtest/src/gtest-all.cc"
+},
+{
+  "directory": "/home/gwh/catkin_ws/build/msckf_vio/gtest/gtest",
+  "command": "/usr/bin/c++   -DGTEST_CREATE_SHARED_LIBRARY=1 -DWITH_LC=1 -Dgtest_main_EXPORTS -I/usr/src/gtest/include -I/usr/src/gtest  -O3 -DNDEBUG -fPIC   -w  -Wall -Wshadow -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++11 -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /usr/src/gtest/src/gtest_main.cc",
+  "file": "/usr/src/gtest/src/gtest_main.cc"
+}
+]

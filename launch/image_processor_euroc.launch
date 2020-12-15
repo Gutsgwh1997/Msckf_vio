@@ -1,14 +1,11 @@
 <launch>
 
   <arg name="robot" default="firefly_sbx"/>
-  <arg name="calibration_file"
-    default="$(find msckf_vio)/config/camchain-imucam-euroc.yaml"/>
+  <arg name="calibration_file" default="$(find msckf_vio)/config/camchain-imucam-euroc.yaml"/>
 
   <!-- Image Processor Nodelet  -->
   <group ns="$(arg robot)">
-    <node pkg="nodelet" type="nodelet" name="image_processor"
-      args="standalone msckf_vio/ImageProcessorNodelet"
-      output="screen">
+    <node pkg="nodelet" type="nodelet" name="image_processor" args="standalone msckf_vio/ImageProcessorNodelet" output="screen">
 
       <rosparam command="load" file="$(arg calibration_file)"/>
       <param name="grid_row" value="4"/>
