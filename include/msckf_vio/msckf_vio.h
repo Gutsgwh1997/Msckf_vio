@@ -279,7 +279,7 @@ namespace msckf_vio {
         double hist_last_marginalized_time = -1;
         std::map<double,Eigen::Matrix<double,7,1>> hist_stateinG;
         std::unordered_map<size_t, Eigen::Vector3d> hist_feat_posinG;
-        // Feature ID, Cam ID, measurements
+        // Feature ID, Cam ID, measurements<由pruneCamStateBuffer()导致使用vector>
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::Vector4d>>> hist_feat_uvs;
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::Vector4d>>> hist_feat_uvs_norm;
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<double>>> hist_feat_timestamps;

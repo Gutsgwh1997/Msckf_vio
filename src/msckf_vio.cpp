@@ -1567,9 +1567,12 @@ void MsckfVio::update_feature(Feature feature) {
 }
 
 /**
- * @brief 
+ * @brief 回环检测模块需要的一些消息 
+ * 1.pruneCamStateBuffer()中添加的用于回环检测的路标点满足了次函数中两个循环条件
+ * 2.包存在系统上一次prunCamStateBuffer时间之后的路标点观测于hist_feat_uvsxxx等
+ * 3.保存在系统上一次prunCamStateBuffer时间之后的cam状态于hist_stateinG
  *
- * @param features
+ * @param features removeLostFeatures()中跟踪丢失而被移除的特征点+pruneCamStateBuffer()中被边缘化那两帧共视的路标点
  */
 void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureLcPtr> &features) {
     // Loop through all features that have been used in the last update
@@ -1581,10 +1584,10 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
 
         // Push back any new measurements if we have them，pruneCamStateBuffer()导致这种情况出现
         // Ensure that if the feature is already added, then just append the new measurements
-        if (hist_feat_posinG.find(feat->featid) != hist_feat_posinG.end()) {
+        if (hist_feat_posinG.find(feat->featid) != hist_feat_posinG.end()) {                   // pruneCamStateBuffer()导致这种情况和下面的情况
             hist_feat_posinG.at(feat->featid) = p_FinG;
             for(const auto &cam2uv : feat->uvs) {
-                if(hist_feat_uvs.at(feat->featid).find(cam2uv.first)!=hist_feat_uvs.at(feat->featid).end()) {
+                if(hist_feat_uvs.at(feat->featid).find(cam2uv.first)!=hist_feat_uvs.at(feat->featid).end()) {// 一个路标点被同一个相机多次观测
                     hist_feat_uvs.at(feat->featid).at(cam2uv.first).insert(hist_feat_uvs.at(feat->featid).at(cam2uv.first).end(), cam2uv.second.begin(), cam2uv.second.end());
                     hist_feat_uvs_norm.at(feat->featid).at(cam2uv.first).insert(hist_feat_uvs_norm.at(feat->featid).at(cam2uv.first).end(), feat->uvs_norm.at(cam2uv.first).begin(), feat->uvs_norm.at(cam2uv.first).end());
                     hist_feat_timestamps.at(feat->featid).at(cam2uv.first).insert(hist_feat_timestamps.at(feat->featid).at(cam2uv.first).end(), feat->timestamps.at(cam2uv.first).begin(), feat->timestamps.at(cam2uv.first).end());
@@ -1602,6 +1605,7 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
         }
     } 
 
+    // Remove those features that older then the last marg time
     std::vector<size_t> ids_to_remove;
     for(const auto &id2feat : hist_feat_timestamps) {
         bool all_older = true;
@@ -1618,8 +1622,6 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
             ids_to_remove.push_back(id2feat.first);
         }
     }
-
-    // Remove those features!
     for(const auto &id : ids_to_remove) {
         hist_feat_posinG.erase(id);
         hist_feat_uvs.erase(id);
@@ -1627,7 +1629,7 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
         hist_feat_timestamps.erase(id);
     }
 
-    // Remove any historical states older then the marg time
+    // Remove any historical states older than the last marg time
     auto it0 = hist_stateinG.begin();
     while(it0 != hist_stateinG.end()) {
         if(it0->first < hist_last_marginalized_time) it0 = hist_stateinG.erase(it0);
@@ -1637,7 +1639,7 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
     // if (state_server.cam_states.size() >= max_cam_state_size)
 
     if ( is_start_loop ) {
-        const auto &cam_state = cam_state_margin.second; // state_server.cam_states.begin()->second;
+        const auto &cam_state = cam_state_margin.second;
         hist_last_marginalized_time = cam_state.time;
         assert(hist_last_marginalized_time != INFINITY);
         Eigen::Matrix<double,7,1> state_inG = Eigen::Matrix<double,7,1>::Zero();
@@ -1648,11 +1650,20 @@ void MsckfVio::update_keyframe_historical_information(const std::vector<FeatureL
         state_inG(3) = q_wc.w();
         state_inG.tail(3) = cam_state.position;
         hist_stateinG.insert({hist_last_marginalized_time, state_inG});
-    } 
+    }
 }
 
+/**
+ * @brief 给回环检测模块发布边缘化掉的帧的消息
+ * 1.发布imu_to_cam0的外参
+ * 2.发布cam0的内参
+ * 3.发布边缘化掉的状态stateinG，imu_to_world
+ * 4.发布边缘化掉的相机帧上的观测（路标点3D位置，Id，像素坐标，归一化平面坐标）
+ *
+ * Note: 两种去除路标点的方式都会在边缘化掉的帧上产生观测！
+ */
 void MsckfVio::publish_keyframe_information() {
-    // if(pub_keyframe_pose.getNumSubscribers()==0 && pub_keyframe_point.getNumSubscribers()==0) return;
+    if(pub_keyframe_pose.getNumSubscribers()==0 && pub_keyframe_point.getNumSubscribers()==0) return;
 
     Eigen::Matrix<double,7,1> stateinG;
     if(hist_last_marginalized_time != -1) {
@@ -1662,29 +1673,26 @@ void MsckfVio::publish_keyframe_information() {
         return;
     }
 
-    printf("[cggos %s] 002 \n", __FUNCTION__);
-
     std_msgs::Header header;
     header.stamp = ros::Time(hist_last_marginalized_time);
-
-    Isometry3d T_ci = utils::getTransformEigen(nh, "cam0/T_cam_imu");
-    Eigen::Vector4d q_ItoC;
-    Eigen::Quaterniond q(T_ci.linear().transpose());
-    q_ItoC[0] = q.x();
-    q_ItoC[1] = q.y();
-    q_ItoC[2] = q.z();
-    q_ItoC[3] = q.w();
-    Eigen::Vector3d p_CinI = - T_ci.linear().transpose() * T_ci.translation();
+    Isometry3d T_ic = utils::getTransformEigen(nh, "cam0/T_cam_imu");
+    Eigen::Vector4d q_CtoI;
+    Eigen::Quaterniond q(T_ic.linear().transpose());
+    q_CtoI[0] = q.x();
+    q_CtoI[1] = q.y();
+    q_CtoI[2] = q.z();
+    q_CtoI[3] = q.w();
+    Eigen::Vector3d p_CinI = - T_ic.linear().transpose() * T_ic.translation();
     nav_msgs::Odometry odometry_calib;
     odometry_calib.header = header;
     odometry_calib.header.frame_id = "imu";
     odometry_calib.pose.pose.position.x = p_CinI(0);
     odometry_calib.pose.pose.position.y = p_CinI(1);
     odometry_calib.pose.pose.position.z = p_CinI(2);
-    odometry_calib.pose.pose.orientation.x = q_ItoC(0);
-    odometry_calib.pose.pose.orientation.y = q_ItoC(1);
-    odometry_calib.pose.pose.orientation.z = q_ItoC(2);
-    odometry_calib.pose.pose.orientation.w = q_ItoC(3);
+    odometry_calib.pose.pose.orientation.x = q_CtoI(0);
+    odometry_calib.pose.pose.orientation.y = q_CtoI(1);
+    odometry_calib.pose.pose.orientation.z = q_CtoI(2);
+    odometry_calib.pose.pose.orientation.w = q_CtoI(3);
     pub_keyframe_extrinsic.publish(odometry_calib);    
 
     sensor_msgs::CameraInfo cameraparams;
@@ -1708,54 +1716,46 @@ void MsckfVio::publish_keyframe_information() {
     nav_msgs::Odometry odometry_pose;
     odometry_pose.header = header;
     odometry_pose.header.frame_id = "global";
-    Eigen::Quaterniond q_wi;
-    Eigen::Vector3d t_wi;
-    {
-        Eigen::Quaterniond q_wc;
-        Eigen::Vector3d t_wc;
-        q_wc.x() = stateinG(0);
-        q_wc.y() = stateinG(1);
-        q_wc.z() = stateinG(2);
-        q_wc.w() = stateinG(3);
-        t_wc = stateinG.tail(3);
+    Eigen::Quaterniond q_iw;
+    Eigen::Vector3d t_iw; {
+        Eigen::Quaterniond q_cw;
+        Eigen::Vector3d t_cw;
+        q_cw.x() = stateinG(0);
+        q_cw.y() = stateinG(1);
+        q_cw.z() = stateinG(2);
+        q_cw.w() = stateinG(3);
+        t_cw = stateinG.tail(3);
 
-        Eigen::Matrix3d r_ci = T_ci.linear();
-        Eigen::Vector3d t_ci = T_ci.translation();
+        Eigen::Matrix3d r_ic = T_ic.linear();
+        Eigen::Vector3d t_ic = T_ic.translation();
 
-        q_wi = q_wc * Eigen::Quaterniond(r_ci);
-        t_wi = q_wc.toRotationMatrix() * t_ci + t_wc;
+        q_iw = q_cw * Eigen::Quaterniond(r_ic);
+        t_iw = q_cw.toRotationMatrix() * t_ic + t_cw;
     }
-    odometry_pose.pose.pose.position.x = t_wi(0);
-    odometry_pose.pose.pose.position.y = t_wi(1);
-    odometry_pose.pose.pose.position.z = t_wi(2);
-    odometry_pose.pose.pose.orientation.x = q_wi.x();
-    odometry_pose.pose.pose.orientation.y = q_wi.y();
-    odometry_pose.pose.pose.orientation.z = q_wi.z();
-    odometry_pose.pose.pose.orientation.w = q_wi.w();
-    pub_keyframe_pose.publish(odometry_pose);   
-
-    printf("[cggos] hist_feat_timestamps size: %d\n", hist_feat_timestamps.size());
+    odometry_pose.pose.pose.position.x = t_iw(0);
+    odometry_pose.pose.pose.position.y = t_iw(1);
+    odometry_pose.pose.pose.position.z = t_iw(2);
+    odometry_pose.pose.pose.orientation.x = q_iw.x();
+    odometry_pose.pose.pose.orientation.y = q_iw.y();
+    odometry_pose.pose.pose.orientation.z = q_iw.z();
+    odometry_pose.pose.pose.orientation.w = q_iw.w();
+    pub_keyframe_pose.publish(odometry_pose);
 
     // Construct the message
     sensor_msgs::PointCloud point_cloud;
     point_cloud.header = header;
     point_cloud.header.frame_id = "global";
     for(const auto &feattimes : hist_feat_timestamps) {
+        // 两种去除路标点的方法都会在cam_state_margin上产生观测，这里选取cam_state_margin.first帧上的观测
         StateIDType state_id = cam_state_margin.first;
 
-        // Skip if this feature has no extraction in the "zero" camera
-        if(feattimes.second.find(state_id)==feattimes.second.end()) // 0
+        // Skip if this feature has no extraction in the "zero" camera，rm_cam_state_ids[0]
+        if (feattimes.second.find(state_id) == feattimes.second.end())
             continue;
-
-        // printf("[cggos loop] %s, %f, %f, %f \n", __FUNCTION__,
-        //     *feattimes.second.at(state_id).begin(),
-        //     *(feattimes.second.at(state_id).end()-1),
-        //     hist_last_marginalized_time);            
 
         // Skip if this feature does not have measurement at this time
         auto iter = std::find(feattimes.second.at(state_id).begin(), feattimes.second.at(state_id).end(), hist_last_marginalized_time);
-        if(iter==feattimes.second.at(state_id).end())
-            continue;
+        if (iter == feattimes.second.at(state_id).end()) continue;
 
         // Get this feature information
         size_t featid = feattimes.first;
