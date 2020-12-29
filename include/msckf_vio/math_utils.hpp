@@ -44,7 +44,7 @@ inline void quaternionNormalize(Eigen::Vector4d& q) {
 }
 
 /*
- * @brief Perform q1 * q2
+ * @brief Perform q1 * q2 in JPL
  */
 inline Eigen::Vector4d quaternionMultiplication(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2) {
     Eigen::Matrix4d L;
@@ -95,7 +95,7 @@ inline Eigen::Vector4d smallAngleQuaternion(const Eigen::Vector3d& dtheta) {
 }
 
 /*
- * @brief Convert a quaternion to the corresponding rotation matrix
+ * @brief Convert a quaternion (JPL) to the corresponding rotation matrix
  * @note Pay attention to the convention used. The function follows the
  *    conversion in "Indirect Kalman Filter for 3D Attitude Estimation:
  *    A Tutorial for Quaternion Algebra", Equation (78).

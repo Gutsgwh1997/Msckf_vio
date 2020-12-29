@@ -25,7 +25,6 @@
 #include <message_filters/time_synchronizer.h>
 
 #define WITH_LIFETIME_STATISTICS 0
-#define WITH_LC 0
 
 namespace msckf_vio {
 

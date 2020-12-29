@@ -34,7 +34,7 @@ struct IMUState {
     // Time when the state is recorded
     double time;
 
-    // Orientation q_I_G
+    // Rotation Orientation q_I_G
     // Take a vector from the world frame to the IMU (body) frame.
     Eigen::Vector4d orientation;
 

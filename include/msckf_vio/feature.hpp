@@ -25,7 +25,6 @@ namespace msckf_vio {
 #if WITH_LC
     /**
      * @brief Feature for loop closure
-     * 
      */
     class FeatureLC {
     public:
@@ -70,12 +69,12 @@ namespace msckf_vio {
             int inner_loop_max_iteration;
 
             OptimizationConfig() :
-                    translation_threshold(0.2),
-                    huber_epsilon(0.01),
-                    estimation_precision(5e-7),
-                    initial_damping(1e-3),
-                    outer_loop_max_iteration(10),
-                    inner_loop_max_iteration(10) {
+                    translation_threshold(0.2),        // checkMotion中的距离阈值，launch文件中设定为-1
+                    huber_epsilon(0.01),               // huber_epsilon
+                    estimation_precision(5e-7),        // L-M算法优化精度
+                    initial_damping(1e-3),             // L-M算法的阻尼\mu
+                    outer_loop_max_iteration(10),      // L-M算法外部迭代次数
+                    inner_loop_max_iteration(10) {     // L-M算法回退操作时尝试的次数
                 return;
             }
         };
@@ -86,9 +85,10 @@ namespace msckf_vio {
         Feature(const FeatureIDType &new_id) : id(new_id), position(Eigen::Vector3d::Zero()), is_initialized(false) {}
 
         /**
-         * @brief cost Compute the cost of the camera observations
-         * @param T_c0_c1 A rigid body transformation takes a vector in c0 frame to ci frame.
-         * @param x The current estimation.
+         * @brief  Compute the cost of the camera observations in normalized plane
+         *
+         * @param T_c0_ci A rigid body transformation takes a vector in c0 frame to ci frame.
+         * @param x The current estimation in c0.（前两维归一化平面点，第三维逆深度）
          * @param z The ith measurement of the feature j in ci frame.
          * @return e The cost of this observation.
          */
@@ -96,10 +96,11 @@ namespace msckf_vio {
                          const Eigen::Vector3d &x, const Eigen::Vector2d &z, double &e) const;
 
         /**
-         * @brief jacobian Compute the Jacobian of the camera observation
-         * @param T_c0_c1 A rigid body transformation takes a vector in c0 frame to ci frame.
-         * @param x The current estimation.
-         * @param z The actual measurement of the feature in ci frame.
+         * @brief Compute the Jacobian of the camera observation
+         *
+         * @param T_c0_ci A rigid body transformation takes a vector in c0 frame to ci frame.
+         * @param x  The current estimation in c0 frame.
+         * @param z  The actual measurement of the feature in ci frame.
          * @return J The computed Jacobian.
          * @return r The computed residual.
          * @return w Weight induced by huber kernel.
@@ -110,9 +111,9 @@ namespace msckf_vio {
 
         /**
          * @brief generateInitialGuess Compute the initial guess of the feature's 3d position using only two views.
-         * @param T_c1_c2: A rigid body transformation taking a vector from c2 frame to c1 frame.
-         * @param z1: feature observation in c1 frame.
-         * @param z2: feature observation in c2 frame.
+         * @param T_c1_c2: A rigid body transformation taking a vector from c1 frame to c2 frame.
+         * @param z1: feature observation in c1 normalized frame.
+         * @param z2: feature observation in c2 normalized frame.
          * @return p: Computed feature position in c1 frame.
          */
         inline void generateInitialGuess(
@@ -121,16 +122,17 @@ namespace msckf_vio {
                 Eigen::Vector3d &p) const;
 
         /**
-         * @brief checkMotion
-         *    Check the input camera poses to ensure there is enough translation to triangulate the feature positon.
+         * @brief Check the input camera poses to ensure there is enough translation to triangulate the feature positon.
          * @param cam_states : input camera poses.
          * @return True if the translation between the input camera poses is sufficient.
          */
         inline bool checkMotion(const CamStateServer &cam_states) const;
 
         /**
-         * @brief InitializePosition Intialize the feature position based on all current available measurements.
+         * @brief Intialize the feature position based on all current available measurements.
+         *
          * @param cam_states: A map containing the camera poses with its ID as the associated key value.
+         *
          * @return The computed 3d position is used to set the position member variable. Note the resulted position is in world frame.
          * @return True if the estimated 3d position of the feature is valid.
          */
@@ -177,10 +179,17 @@ namespace msckf_vio {
     typedef std::map<FeatureIDType, Feature, std::less<int>,
             Eigen::aligned_allocator<std::pair<const FeatureIDType, Feature> > > MapServer;
 
-
+    
+    /**
+     * @brief  Compute the cost of the camera observations in normalized plane
+     *
+     * @param T_c0_ci A rigid body transformation takes a vector in c0 frame to ci frame.
+     * @param x The current estimation in c0.（前两维归一化平面点，第三维逆深度）
+     * @param z The ith measurement of the feature j in ci frame.
+     * @return e The cost of this observation.
+     */
     void Feature::cost(const Eigen::Isometry3d &T_c0_ci,
                        const Eigen::Vector3d &x, const Eigen::Vector2d &z, double &e) const {
-        // Compute hi1, hi2, and hi3 as Equation (37).
         const double &alpha = x(0);
         const double &beta  = x(1);
         const double &rho   = x(2);
@@ -198,12 +207,20 @@ namespace msckf_vio {
         return;
     }
 
+    /**
+      * @brief Compute the Jacobian of the camera observation
+      *
+      * @param T_c0_ci A rigid body transformation takes a vector in c0 frame to ci frame.
+      * @param x  The current estimation in c0 frame.
+      * @param z  The actual measurement of the feature in ci frame.
+      * @return J The computed Jacobian.
+      * @return r The computed residual，这个r的平方r^Tr就是cost计算得到的值.
+      * @return w Weight induced by huber kernel.
+      */
     void Feature::jacobian(const Eigen::Isometry3d &T_c0_ci,
                            const Eigen::Vector3d &x, const Eigen::Vector2d &z,
                            Eigen::Matrix<double, 2, 3> &J, Eigen::Vector2d &r,
                            double &w) const {
-
-        // Compute hi1, hi2, and hi3 as Equation (37).
         const double &alpha = x(0);
         const double &beta = x(1);
         const double &rho = x(2);
@@ -213,7 +230,7 @@ namespace msckf_vio {
         double &h2 = h(1);
         double &h3 = h(2);
 
-        // Compute the Jacobian.
+        // Compute the Jacobian.参考SLAM十四讲P_165公式（7.47），但因为这里使用的是逆深度，所以Jacobian有点区别
         Eigen::Matrix3d W;
         W.leftCols<2>()  = T_c0_ci.linear().leftCols<2>();
         W.rightCols<1>() = T_c0_ci.translation();
@@ -235,11 +252,19 @@ namespace msckf_vio {
         return;
     }
 
+    /**
+     * @brief Compute the initial guess of the feature's 3d position using only two views.
+     * @param T_c1_c2: A rigid body transformation taking a vector from c1 frame to c2 frame.
+     * @param z1: feature observation in c1 normalized frame.
+     * @param z2: feature observation in c2 normalized frame.
+     * @return p: Computed feature position in c1 frame.
+     */
     void Feature::generateInitialGuess(
             const Eigen::Isometry3d &T_c1_c2,
             const Eigen::Vector2d &z1, const Eigen::Vector2d &z2,
             Eigen::Vector3d &p) const {
         // Construct a least square problem to solve the depth.
+        // SLAM十四将中三角化的方法，解超定方程求解depth
         Eigen::Vector3d m = T_c1_c2.linear() * Eigen::Vector3d(z1(0), z1(1), 1.0);
 
         Eigen::Vector2d A(0.0, 0.0);
@@ -258,11 +283,21 @@ namespace msckf_vio {
         return;
     }
 
+    /**
+     * @brief Check the input camera poses to ensure there is enough translation to triangulate this feature.
+     * 1. 只检测了cam_states中最老与最新帧之间的平移;
+     * 2. TODO这里的投影计算方式第一次见，并且参数阈值设定的是-1有毛用？
+     *
+     * @param cam_states : input camera poses.
+     *
+     * @return True if the translation between the input camera poses is sufficient.
+     */
     bool Feature::checkMotion(const CamStateServer &cam_states) const {
         const StateIDType &first_cam_id =  observations.begin()->first;
         const StateIDType &last_cam_id = (--observations.end())->first;
-
-        Eigen::Isometry3d first_cam_pose;
+        
+        // Position and Rotation of the camera frame in the world frame.
+        Eigen::Isometry3d first_cam_pose; 
         first_cam_pose.linear() = quaternionToRotation(cam_states.find(first_cam_id)->second.orientation).transpose();
         first_cam_pose.translation() = cam_states.find(first_cam_id)->second.position;
 
@@ -276,8 +311,9 @@ namespace msckf_vio {
         feature_direction = feature_direction / feature_direction.norm();
         feature_direction = first_cam_pose.linear() * feature_direction;
 
-        // Compute the translation between the first frame and the last frame.
-        // We assume the first frame and the last frame will provide the largest motion to speed up the checking process.
+        // Compute the translation between the first frame and the last frame, and protected to the feature direction.
+        // TODO We assume the first frame and the last frame will provide the largest motion to speed up the checking process.
+        // TODO 画几个矢量就能理解这里计算的长度了
         Eigen::Vector3d translation = last_cam_pose.translation() - first_cam_pose.translation();
         double parallel_translation = translation.transpose() * feature_direction;
         Eigen::Vector3d orthogonal_translation = translation - parallel_translation * feature_direction;
@@ -288,11 +324,21 @@ namespace msckf_vio {
             return false;
     }
 
+
+    /**
+     * @brief Intialize the feature position based on all current available measurements.
+     *
+     * @param cam_states: A map containing the camera poses with its ID as the associated key value.
+     *
+     * @return The computed 3d position is used to set the position member variable. Note the resulted position is in world frame.
+     * @return True if the estimated 3d position of the feature is valid.
+     */
     bool Feature::initializePosition(const CamStateServer &cam_states) {
         // Organize camera poses and feature observations properly.
         std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d> > cam_poses(0);
         std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > measurements(0);
 
+        // observations结构map<相机id，左右眼归一化平面坐标>
         for (auto &m : observations) {
             // TODO: This should be handled properly.
             //  Normally, the required camera states should all be available in the input cam_states buffer.
@@ -323,9 +369,10 @@ namespace msckf_vio {
             pose = pose.inverse() * T_c0_w;
 
         // Generate initial guess
-        Eigen::Vector3d initial_position(0.0, 0.0, 0.0); // c0 frame
+        Eigen::Vector3d initial_position(0.0, 0.0, 0.0);    // c0 frame
+        // 仅使用两帧相机来三角化路标点，以获得c0相机坐标系下特征点的初始值
         generateInitialGuess(cam_poses[cam_poses.size() - 1], measurements[0], measurements[measurements.size() - 1], initial_position);
-        Eigen::Vector3d solution(
+        Eigen::Vector3d solution(   // 前两维是相机归一化平面点，最后一维逆深度
                 initial_position(0) / initial_position(2),
                 initial_position(1) / initial_position(2),
                 1.0 / initial_position(2));
@@ -337,7 +384,7 @@ namespace msckf_vio {
         bool is_cost_reduced = false;
         double delta_norm = 0;
 
-        // Compute the initial cost.
+        // Compute the initial cost in normalized plane.
         double total_cost = 0.0;
         for (int i = 0; i < cam_poses.size(); ++i) {
             double this_cost = 0.0;
@@ -382,6 +429,7 @@ namespace msckf_vio {
                     new_cost += this_cost;
                 }
 
+                // 判断误差是否下降，若误差下降，减小阻尼，若误差上升增大阻尼
                 if (new_cost < total_cost) {
                     is_cost_reduced = true;
                     solution = new_solution;
@@ -399,7 +447,7 @@ namespace msckf_vio {
         } while (outer_loop_cntr++ < optimization_config.outer_loop_max_iteration &&
                  delta_norm > optimization_config.estimation_precision);
 
-        // Covert the feature position from inverse depth representation to its 3d coordinate.
+        // Covert the feature position from inverse depth representation to its 3d coordinate in c0 camera frame.
         Eigen::Vector3d final_position(solution(0) / solution(2), solution(1) / solution(2), 1.0 / solution(2));
 
         // Check if the solution is valid. Make sure the feature is in front of every camera frame observing it.

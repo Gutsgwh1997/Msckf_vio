@@ -4,7 +4,6 @@
  * Copyright (C) 2017 The Trustees of the University of Pennsylvania
  * All rights reserved.
  */
-
 #ifndef MSCKF_VIO_H
 #define MSCKF_VIO_H
 
@@ -74,8 +73,8 @@ namespace msckf_vio {
             CamStateServer cam_states;
 
             // State covariance matrix
-            Eigen::MatrixXd state_cov;
-            Eigen::Matrix<double, 12, 12> continuous_noise_cov;
+            Eigen::MatrixXd state_cov;                            // 系统初始状态的置信度
+            Eigen::Matrix<double, 12, 12> continuous_noise_cov;   // 连续噪声协方差矩阵
         };
 
 
@@ -97,9 +96,10 @@ namespace msckf_vio {
         void imuCallback(const sensor_msgs::ImuConstPtr &msg);
 
         /**
-         * @brief featureCallback Callback function for feature measurements.
-         * @details 接收双目特征，进行后端处理。利用IMU进行EKF Propagation，利用双目特征进行EKF Update
-         * @param msg Stereo feature measurements.
+         * @brief Callback function for Stereo feature measurements.
+         *        接收双目特征进行后端处理，利用IMU进行EKF Propagation，利用双目特征进行EKF Update。
+         *
+         * @param msg 自定义的双目特征消息类型
          */
         void featureCallback(const CameraMeasurementConstPtr &msg);
 
@@ -110,11 +110,11 @@ namespace msckf_vio {
         void publish(const ros::Time &time);
 
         /**
-         * @brief initializegravityAndBias
-         *    Initialize the IMU bias and initial orientation based on the first few IMU readings.
-         * @details 将前200帧加速度和角速度求平均, 平均加速度的模值g作为重力加速度, 平均角速度作为陀螺仪的bias,
-         *          计算重力向量(0,0,-g)和平均加速度之间的夹角(旋转四元数), 标定初始时刻IMU系与world系之间的夹角.
-         *          因此MSCKF要求前200帧IMU是静止不动的
+         * @brief Initialize the IMU bias and initial orientation based on the first few IMU readings.
+         *
+         *  将前200帧加速度和角速度求平均, 平均加速度的模值g作为重力加速度, 平均角速度作为陀螺仪的bias,
+         *  计算重力向量(0,0,-g)和平均加速度之间的夹角(旋转四元数), 标定初始时刻IMU系与world系之间的夹角,
+         *  因此MSCKF要求前200帧IMU是静止不动的。
          */
         void initializeGravityAndBias();
 
@@ -135,9 +135,9 @@ namespace msckf_vio {
 
         /**
          * @brief 单帧IMU过程模型：状态向量预测、状态协方差预测
-         * @param time
-         * @param m_gyro
-         * @param m_acc
+         * @param time   imu消息时间戳
+         * @param m_gyro 陀螺仪原始测量
+         * @param m_acc  加速度计原始测量
          */
         void processModel(const double &time, const Eigen::Vector3d &m_gyro, const Eigen::Vector3d &m_acc);
 
@@ -149,7 +149,8 @@ namespace msckf_vio {
 
         /**
          * @brief Add new observations for existing features or new features in the map server.
-         * @param msg
+         *
+         * @param msg 自定义的双目消息类型
          */
         void addFeatureObservations(const CameraMeasurementConstPtr &msg);
 
@@ -218,8 +219,8 @@ namespace msckf_vio {
         // Tracking rate
         double tracking_rate;
 
-        // Threshold for determine keyframes
-        double translation_threshold;
+        // Threshold for determine keyframes used in function findRedundantCamStates
+        double translation_threshold;     // Sliding Window满时，决定剔除最新帧还是最老帧的关键帧距离阈值
         double rotation_threshold;
         double tracking_rate_threshold;
 
@@ -258,6 +259,7 @@ namespace msckf_vio {
         Eigen::Isometry3d mocap_initial_frame;
 
         std::ofstream pose_outfile_;
+        std::string pose_out_file_path_;
 
 #if WITH_LC
     private:
@@ -277,6 +279,7 @@ namespace msckf_vio {
         double hist_last_marginalized_time = -1;
         std::map<double,Eigen::Matrix<double,7,1>> hist_stateinG;
         std::unordered_map<size_t, Eigen::Vector3d> hist_feat_posinG;
+        // Feature ID, Cam ID, measurements
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::Vector4d>>> hist_feat_uvs;
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::Vector4d>>> hist_feat_uvs_norm;
         std::unordered_map<size_t, std::unordered_map<size_t, std::vector<double>>> hist_feat_timestamps;
